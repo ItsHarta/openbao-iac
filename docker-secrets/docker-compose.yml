@@ -1,0 +1,30 @@
+services:
+  debian:
+    image: debian:latest
+    container_name: debian
+    command: sleep infinity
+    volumes:
+      - bao_data:/app/secrets:ro
+    tty: true
+    networks:
+      - app_network
+
+  openbao:
+    image: openbao/openbao:latest
+    container_name: openbao
+    entrypoint: ["bao", "agent", "-config", "/mnt/agent-config.hcl"]
+    volumes:
+      - ./template.ctmpl:/mnt/secrets.ctmpl
+      - ./roleid:/mnt/roleid:ro
+      - ./secretid:/mnt/secretid:ro
+      - ./agent-config.hcl:/mnt/agent-config.hcl:ro
+      - bao_data:/etc/openbao
+    networks:
+      - app_network
+
+networks:
+  app_network:
+    driver: bridge
+
+volumes:
+  bao_data:

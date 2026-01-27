@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: bao-token
+  namespace: default
+data:
+  token: cy42d3lZd3dUZHJJM3Nuamk0aklRZ1F5VDI=

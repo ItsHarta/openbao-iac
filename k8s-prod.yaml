@@ -1,0 +1,104 @@
+global:
+  enabled: true
+  tlsDisable: false
+
+server:
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    annotations:
+      #cert-manager.io/cluster-issuer: "letsencrypt-prod"
+      nginx.org/ssl-services: "openbao-active"
+      nginx.org/proxy-ssl-verify: "off"
+      nginx.org/proxy-body-size: "100m"
+      nginx.org/proxy-read-timeout: "180"
+    hosts:
+    - host: openbao.astn.fyi
+      paths: []
+    tls:
+    - secretName: wildcard-tls
+      hosts:
+        - openbao.astn.fyi
+
+  extraEnvironmentVars:
+    OPENBAO_CACERT: /openbao/userconfig/internal-tls/ca.crt
+    BAO_SKIP_VERIFY: true
+
+  volumes:
+    - name: internal-tls
+      secret:
+        secretName: openbao-internal-tls
+
+  volumeMounts:
+    - name: internal-tls
+      mountPath: /openbao/userconfig/internal-tls
+      readOnly: true
+
+  ha:
+    enabled: true
+    replicas: 3
+    raft:
+      enabled: true
+      setNodeId: true
+      config: |
+        ui = true
+        unsafe_allow_api_audit_creation = true
+        service_registration "kubernetes" {}
+
+        listener "tcp" {
+          address = "[::]:8200"
+          cluster_address = "[::]:8201"
+          tls_cert_file = "/openbao/userconfig/internal-tls/tls.crt"
+          tls_key_file  = "/openbao/userconfig/internal-tls/tls.key"
+          tls_client_ca_file = "/openbao/userconfig/internal-tls/ca.crt"
+        }
+
+        storage "raft" {
+          path = "/openbao/data"
+            retry_join {
+              leader_api_addr = "https://openbao-0.openbao-internal:8200"
+              leader_client_cert_file = "/openbao/userconfig/internal-tls/tls.crt"
+              leader_client_key_file  = "/openbao/userconfig/internal-tls/tls.key"
+              leader_ca_cert_file = "/openbao/userconfig/internal-tls/ca.crt"
+            }
+
+            retry_join {
+              leader_api_addr = "https://openbao-1.openbao-internal:8200"
+              leader_client_cert_file = "/openbao/userconfig/internal-tls/tls.crt"
+              leader_client_key_file  = "/openbao/userconfig/internal-tls/tls.key"
+              leader_ca_cert_file = "/openbao/userconfig/internal-tls/ca.crt"
+            }
+
+            retry_join {
+              leader_api_addr = "https://openbao-2.openbao-internal:8200"
+              leader_client_cert_file = "/openbao/userconfig/internal-tls/tls.crt"
+              leader_client_key_file  = "/openbao/userconfig/internal-tls/tls.key"
+              leader_ca_cert_file = "/openbao/userconfig/internal-tls/ca.crt"
+            }
+        }
+
+        audit "file" "audit-raft" {
+          description = "Raft-based audit logs"
+          options {
+            file_path = "/openbao/audit/openbao_audit.log"
+            log_raw = "true"
+          }
+        }
+
+  service:
+    enabled: true
+
+  dataStorage:
+    enabled: true
+    size: 5Gi
+    storageClass: null
+    accessMode: ReadWriteOnce
+
+  auditStorage:
+    enabled: true
+    size: 5Gi
+    storageClass: null
+    accessMode: ReadWriteOnce
+
+ui:
+  enabled: true

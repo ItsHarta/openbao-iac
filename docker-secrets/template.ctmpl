@@ -1,0 +1,5 @@
+{{- with secret "secrets/openbao-agent" -}}
+{{- range $k, $v := .Data.data -}}
+{{ $k }}={{ $v }}
+{{ end -}}
+{{- end -}}
