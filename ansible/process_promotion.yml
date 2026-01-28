@@ -29,7 +29,15 @@
     path: "{{ manifest.source.path }}"
   register: source_secret
   no_log: true
+  ignore_errors: true
 
+- name: Validate Source Secret Exists
+  ansible.builtin.fail:
+    msg: >-
+      Source secret '{{ manifest.source.path }}' was not found in namespace
+      '{{ manifest.source.namespace }}' with mount '{{ manifest.source.mount }}'.
+      Cannot promote secret.
+  when: source_secret is failed or source_secret is not defined or source_secret.secret is not defined
 - name: Write Secret to Destination
   community.hashi_vault.vault_kv2_write:
     url: "{{ vault_addr }}"
