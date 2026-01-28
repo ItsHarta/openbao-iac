@@ -52,8 +52,8 @@ vault policy write promoter /tmp/promoter-policy.hcl
 echo "Creating 'promoter' AppRole..."
 vault write auth/actions/role/promoter \
     token_policies="promoter" \
-    token_ttl=1h \
-    token_max_ttl=4h
+    token_ttl=15m \
+    token_max_ttl=30m
 
 # 4. Get Creds
 echo "Generating credentials..."
