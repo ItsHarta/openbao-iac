@@ -12,7 +12,7 @@ This repository manages the promotion of secrets from Staging to Production in O
     *   Commit and push the branch.
 3.  **Review**: Open a Pull Request. The team reviews the request.
 4.  **Promote**:
-    *   Once the PR is merged to `main`, the GitHub Action triggers.
+    *   Once the PR is merged to `master`, the GitHub Action triggers.
     *   An Ansible playbook runs, authenticates to OpenBao, reading the secret from Staging and writing it to Production (namespace: `prod`, mount: `secrets/`).
 
 ## Setup
