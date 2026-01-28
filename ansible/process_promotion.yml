@@ -1,7 +1,7 @@
 ---
 - name: Read Promotion Manifest
   include_vars:
-    file: "{{ promotion_file }}"
+    file: "../{{ promotion_file }}"
     name: manifest
 
 - name: Validate Promotion Manifest Structure
