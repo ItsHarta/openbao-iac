@@ -22,13 +22,22 @@
         msg: "Please provide 'promotion_files' variable (list of file paths)."
       when: promotion_files is not defined
 
-    - name: Authenticate to Vault
-      community.hashi_vault.vault_login:
-        url: "{{ vault_addr }}"
-        auth_method: approle
-        role_id: "{{ vault_role_id }}"
-        secret_id: "{{ vault_secret_id }}"
-      register: vault_auth
+    - block:
+        - name: Authenticate to Vault
+          community.hashi_vault.vault_login:
+            url: "{{ vault_addr }}"
+            auth_method: approle
+            role_id: "{{ vault_role_id }}"
+            secret_id: "{{ vault_secret_id }}"
+          register: vault_auth
+      rescue:
+        - name: Vault authentication failed - check Vault configuration and credentials
+          fail:
+            msg: >
+              Vault authentication failed. Please verify that VAULT_ADDR
+              ({{ vault_addr }}) is correct and reachable, and that
+              VAULT_ROLE_ID and VAULT_SECRET_ID are set to valid, non-expired
+              AppRole credentials.
 
     - name: Process Promotions
       include_tasks: process_promotion.yml
