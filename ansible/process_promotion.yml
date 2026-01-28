@@ -1,0 +1,49 @@
+---
+- name: Read Promotion Manifest
+  include_vars:
+    file: "{{ promotion_file }}"
+    name: manifest
+
+- name: Validate Promotion Manifest Structure
+  ansible.builtin.assert:
+    that:
+      - manifest is defined
+      - manifest.source is defined
+      - manifest.source.namespace is defined
+      - manifest.source.mount is defined
+      - manifest.source.path is defined
+      - manifest.destination is defined
+      - manifest.destination.namespace is defined
+      - manifest.destination.mount is defined
+      - manifest.destination.path is defined
+    fail_msg: >-
+      Invalid promotion manifest structure. Expected fields:
+      source.namespace, source.mount, source.path,
+      destination.namespace, destination.mount, destination.path.
+- name: Read Secret from Source
+  community.hashi_vault.vault_kv2_get:
+    url: "{{ vault_addr }}"
+    token: "{{ vault_auth.login.auth.client_token }}"
+    namespace: "{{ manifest.source.namespace }}"
+    engine_mount_point: "{{ manifest.source.mount }}"
+    path: "{{ manifest.source.path }}"
+  register: source_secret
+  no_log: true
+  ignore_errors: true
+
+- name: Validate Source Secret Exists
+  ansible.builtin.fail:
+    msg: >-
+      Source secret '{{ manifest.source.path }}' was not found in namespace
+      '{{ manifest.source.namespace }}' with mount '{{ manifest.source.mount }}'.
+      Cannot promote secret.
+  when: source_secret is failed or source_secret is not defined or source_secret.secret is not defined
+- name: Write Secret to Destination
+  community.hashi_vault.vault_kv2_write:
+    url: "{{ vault_addr }}"
+    token: "{{ vault_auth.login.auth.client_token }}"
+    namespace: "{{ manifest.destination.namespace }}"
+    engine_mount_point: "{{ manifest.destination.mount }}"
+    path: "{{ manifest.destination.path }}"
+    data: "{{ source_secret.secret }}"
+  no_log: true
