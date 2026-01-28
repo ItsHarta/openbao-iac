@@ -17,3 +17,4 @@ destination:
   # The path where the secret should be written
   path: "promoted-secrets"
 
+
