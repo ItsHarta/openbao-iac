@@ -1,0 +1,25 @@
+---
+- name: Read Promotion Manifest
+  include_vars:
+    file: "{{ promotion_file }}"
+    name: manifest
+
+- name: Read Secret from Source
+  community.hashi_vault.vault_kv2_get:
+    url: "{{ vault_addr }}"
+    token: "{{ vault_auth.login.auth.client_token }}"
+    namespace: "{{ manifest.source.namespace }}"
+    engine_mount_point: "{{ manifest.source.mount }}"
+    path: "{{ manifest.source.path }}"
+  register: source_secret
+  no_log: true
+
+- name: Write Secret to Destination
+  community.hashi_vault.vault_kv2_write:
+    url: "{{ vault_addr }}"
+    token: "{{ vault_auth.login.auth.client_token }}"
+    namespace: "{{ manifest.destination.namespace }}"
+    engine_mount_point: "{{ manifest.destination.mount }}"
+    path: "{{ manifest.destination.path }}"
+    data: "{{ source_secret.secret }}"
+  no_log: true
