@@ -4,6 +4,22 @@
     file: "{{ promotion_file }}"
     name: manifest
 
+- name: Validate Promotion Manifest Structure
+  ansible.builtin.assert:
+    that:
+      - manifest is defined
+      - manifest.source is defined
+      - manifest.source.namespace is defined
+      - manifest.source.mount is defined
+      - manifest.source.path is defined
+      - manifest.destination is defined
+      - manifest.destination.namespace is defined
+      - manifest.destination.mount is defined
+      - manifest.destination.path is defined
+    fail_msg: >-
+      Invalid promotion manifest structure. Expected fields:
+      source.namespace, source.mount, source.path,
+      destination.namespace, destination.mount, destination.path.
 - name: Read Secret from Source
   community.hashi_vault.vault_kv2_get:
     url: "{{ vault_addr }}"
