@@ -26,7 +26,7 @@
         - name: Authenticate to Vault
           community.hashi_vault.vault_login:
             url: "{{ vault_addr }}"
-            auth_method: approle
+            auth_method: actions
             role_id: "{{ vault_role_id }}"
             secret_id: "{{ vault_secret_id }}"
           register: vault_auth
