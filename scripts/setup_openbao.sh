@@ -6,51 +6,41 @@ set -e
 
 echo "Setting up OpenBao for GitOps..."
 
-# 1. Create Namespaces
-echo "Creating namespaces..."
-vault namespace create staging || echo "Namespace 'staging' might already exist"
-vault namespace create production || echo "Namespace 'production' might already exist"
+# Namespaces 'staging' and 'prod' are assumed to exist.
+# KV engines are assumed to be mounted at:
+# - staging: stag-keys/
+# - prod: secrets/
 
-# 2. Enable KV v2 in namespaces
-echo "Enabling KV-v2 secrets engines..."
-export VAULT_NAMESPACE=staging
-vault secrets enable -path=secret kv-v2 || echo "KV enabled in staging"
-
-export VAULT_NAMESPACE=production
-vault secrets enable -path=secret kv-v2 || echo "KV enabled in production"
-
-# 3. Enable AppRole in Root
+# 1. Enable AppRole in Root (mounted at actions/)
 unset VAULT_NAMESPACE
-echo "Enabling AppRole auth method in root..."
-vault auth enable approle || echo "AppRole already enabled"
+echo "Enabling AppRole auth method at 'actions/'..."
+vault auth enable -path=actions approle || echo "AppRole already enabled at 'actions/'"
 
-# 4. Create Policy
+# 2. Create Policy
 echo "Creating 'promoter' policy..."
 # Defines permissions to read from staging and write to production.
-# Assumes paths are relative to the root when using a root token/policy
-# but accessing via namespace headers works if the policy allows the full path.
 cat <<EOF > /tmp/promoter-policy.hcl
 # Allow tokens to look up their own properties
 path "auth/token/lookup-self" {
     capabilities = ["read"]
 }
 
-# Read from Staging
+# Read from Staging (namespace: staging, mount: stag-keys)
 namespace "staging" {
-  path "secret/data/*" {
+  path "stag-keys/data/*" {
       capabilities = ["read", "list"]
   }
-  path "secret/metadata/*" {
+  path "stag-keys/metadata/*" {
       capabilities = ["read", "list"]
   }
 }
 
-# Write to Production
-namespace "production" {
-  path "secret/data/*" {
+# Write to Production (namespace: prod, mount: secrets)
+namespace "prod" {
+  path "secrets/data/*" {
       capabilities = ["create", "update", "read", "list"]
   }
-  path "secret/metadata/*" {
+  path "secrets/metadata/*" {
       capabilities = ["create", "update", "read", "list"]
   }
 }
@@ -58,17 +48,17 @@ EOF
 
 vault policy write promoter /tmp/promoter-policy.hcl
 
-# 5. Create AppRole
+# 3. Create AppRole
 echo "Creating 'promoter' AppRole..."
-vault write auth/approle/role/promoter \
+vault write auth/actions/role/promoter \
     token_policies="promoter" \
     token_ttl=1h \
     token_max_ttl=4h
 
-# 6. Get Creds
+# 4. Get Creds
 echo "Generating credentials..."
-ROLE_ID=$(vault read -field=role_id auth/approle/role/promoter/role-id)
-SECRET_ID=$(vault write -f -field=secret_id auth/approle/role/promoter/secret-id)
+ROLE_ID=$(vault read -field=role_id auth/actions/role/promoter/role-id)
+SECRET_ID=$(vault write -f -field=secret_id auth/actions/role/promoter/secret-id)
 
 echo ""
 echo "Setup Complete."
