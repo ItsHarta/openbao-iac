@@ -1,0 +1,18 @@
+# Example promotion manifest
+# This file defines a secret to be promoted from a source namespace to a destination namespace.
+
+source:
+  # The namespace where the secret currently exists
+  namespace: "staging"
+  # The mount point of the KV store (e.g., 'secret', 'kv')
+  mount: "secret"
+  # The path to the secret (relative to the mount point)
+  path: "myapp/database"
+
+destination:
+  # The namespace where the secret should be promoted to
+  namespace: "production"
+  # The mount point of the KV store
+  mount: "secret"
+  # The path where the secret should be written
+  path: "myapp/database"
