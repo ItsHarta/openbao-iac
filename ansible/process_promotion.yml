@@ -20,6 +20,11 @@
       Invalid promotion manifest structure. Expected fields:
       source.namespace, source.mount, source.path,
       destination.namespace, destination.mount, destination.path.
+
+- name: Set partial promotion flag
+  ansible.builtin.set_fact:
+    partial_promotion: "{{ manifest.keys is defined and manifest.keys | length > 0 }}"
+
 - name: Read Secret from Source
   community.hashi_vault.vault_kv2_get:
     url: "{{ vault_addr }}"
@@ -38,6 +43,46 @@
       '{{ manifest.source.namespace }}' with mount '{{ manifest.source.mount }}'.
       Cannot promote secret.
   when: source_secret is failed or source_secret is not defined or source_secret.secret is not defined
+
+- name: Validate Requested Keys Exist in Source (partial promotion)
+  ansible.builtin.fail:
+    msg: >-
+      Key '{{ item }}' was not found in source secret '{{ manifest.source.path }}'.
+      Available keys: {{ source_secret.secret.keys() | list }}.
+  loop: "{{ manifest.keys | default([]) }}"
+  when:
+    - partial_promotion | bool
+    - item not in source_secret.secret
+
+- name: Filter Secret Data for Partial Promotion
+  ansible.builtin.set_fact:
+    filtered_secret: "{{ filtered_secret | default({}) | combine({item: source_secret.secret[item]}) }}"
+  loop: "{{ manifest.keys }}"
+  when: partial_promotion | bool
+  no_log: true
+
+- name: Read Existing Destination Secret (for merge on partial promotion)
+  community.hashi_vault.vault_kv2_get:
+    url: "{{ vault_addr }}"
+    token: "{{ vault_auth.login.auth.client_token }}"
+    namespace: "{{ manifest.destination.namespace }}"
+    engine_mount_point: "{{ manifest.destination.mount }}"
+    path: "{{ manifest.destination.path }}"
+  register: dest_secret
+  no_log: true
+  ignore_errors: true
+  when: partial_promotion | bool
+
+- name: Prepare Final Secret Data
+  ansible.builtin.set_fact:
+    final_secret: >-
+      {{
+        (dest_secret.secret | default({})) | combine(filtered_secret)
+        if partial_promotion | bool
+        else source_secret.secret
+      }}
+  no_log: true
+
 - name: Write Secret to Destination
   community.hashi_vault.vault_kv2_write:
     url: "{{ vault_addr }}"
@@ -45,5 +90,5 @@
     namespace: "{{ manifest.destination.namespace }}"
     engine_mount_point: "{{ manifest.destination.mount }}"
     path: "{{ manifest.destination.path }}"
-    data: "{{ source_secret.secret }}"
+    data: "{{ final_secret }}"
   no_log: true
