@@ -7,7 +7,7 @@ source:
   # The mount point of the KV store (e.g., 'secret', 'kv')
   mount: "stag-keys"
   # The path to the secret (relative to the mount point)
-  path: "app1/appkey"
+  path: "app1"
 
 destination:
   # The namespace where the secret should be promoted to
@@ -15,4 +15,7 @@ destination:
   # The mount point of the KV store
   mount: "secrets"
   # The path where the secret should be written
-  path: "app-prod/appkey"
+  path: "app-prod"
+
+keys:
+  - "appkey"
