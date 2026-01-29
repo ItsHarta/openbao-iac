@@ -23,7 +23,7 @@
 
 - name: Set partial promotion flag
   ansible.builtin.set_fact:
-    partial_promotion: "{{ (manifest.keys is defined) and (manifest.keys | default([]) | list | length > 0) }}"
+    partial_promotion: "{{ (manifest.promote_keys is defined) and (manifest.promote_keys | default([]) | length > 0) }}"
 
 - name: Read Secret from Source
   community.hashi_vault.vault_kv2_get:
@@ -48,8 +48,8 @@
   ansible.builtin.fail:
     msg: >-
       Key '{{ item }}' was not found in source secret '{{ manifest.source.path }}'.
-      Available keys: {{ source_secret.secret.keys() | list }}.
-  loop: "{{ manifest.keys | default([]) }}"
+      Available keys: {{ source_secret.secret | list }}.
+  loop: "{{ manifest.promote_keys | default([]) }}"
   when:
     - partial_promotion | bool
     - item not in source_secret.secret
@@ -57,7 +57,7 @@
 - name: Filter Secret Data for Partial Promotion
   ansible.builtin.set_fact:
     filtered_secret: "{{ filtered_secret | default({}) | combine({item: source_secret.secret[item]}) }}"
-  loop: "{{ manifest.keys }}"
+  loop: "{{ manifest.promote_keys }}"
   when: partial_promotion | bool
   no_log: true
 

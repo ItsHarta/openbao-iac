@@ -20,6 +20,6 @@ destination:
 # If omitted or empty, all keys from the source secret will be promoted.
 # If specified, only the listed keys will be promoted and merged with
 # any existing keys at the destination path.
-# keys:
+# promote_keys:
 #   - "password"
 #   - "username"

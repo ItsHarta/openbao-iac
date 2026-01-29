@@ -17,6 +17,6 @@ destination:
   # The path where the secret should be written
   path: "app-prod"
 
-keys:
+promote_keys:
   - "appkey"
 #retrigger
