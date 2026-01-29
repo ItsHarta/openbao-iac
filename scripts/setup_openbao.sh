@@ -26,23 +26,19 @@ path "auth/token/lookup-self" {
 }
 
 # Read from Staging (namespace: staging, mount: stag-keys)
-namespace "staging" {
-  path "stag-keys/data/*" {
-      capabilities = ["read", "list"]
-  }
-  path "stag-keys/metadata/*" {
-      capabilities = ["read", "list"]
-  }
+path "staging/stag-keys/data/*" {
+    capabilities = ["read", "list"]
+}
+path "staging/stag-keys/metadata/*" {
+    capabilities = ["read", "list"]
 }
 
 # Write to Production (namespace: prod, mount: secrets)
-namespace "prod" {
-  path "secrets/data/*" {
-      capabilities = ["create", "update", "read", "list"]
-  }
-  path "secrets/metadata/*" {
-      capabilities = ["create", "update", "read", "list"]
-  }
+path "prod/secrets/data/*" {
+    capabilities = ["create", "update", "read", "list"]
+}
+path "prod/secrets/metadata/*" {
+    capabilities = ["create", "update", "read", "list"]
 }
 EOF
 
