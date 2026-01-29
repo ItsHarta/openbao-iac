@@ -23,7 +23,7 @@
 
 - name: Set partial promotion flag
   ansible.builtin.set_fact:
-    partial_promotion: "{{ manifest.keys is defined and manifest.keys | length > 0 }}"
+    partial_promotion: "{{ (manifest.keys is defined) and (manifest.keys | default([]) | list | length > 0) }}"
 
 - name: Read Secret from Source
   community.hashi_vault.vault_kv2_get:
